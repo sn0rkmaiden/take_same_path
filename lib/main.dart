@@ -7,7 +7,7 @@ extension Swappable on List {
   void swap(int a, int b) {
     var tmp = this[a];
     this[a] = this[b];
-    this[b] = tmp;    
+    this[b] = tmp;
   }
 }
 
@@ -33,7 +33,7 @@ class MainApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});    
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -47,21 +47,21 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isFirstTime = true;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
-  } 
+  }
 
   generateEdges(List<Offset> nodes) {
     double s = 0;
     var edges = <Offset>[];
-    for (int i = 0; i < nodes.length - 1; i++) {      
-        edges.add(nodes[i]);
-        edges.add(nodes[i + 1]);
-        s += sqrt((nodes[i] - nodes[i + 1]).distanceSquared);
-    }    
+    for (int i = 0; i < nodes.length - 1; i++) {
+      edges.add(nodes[i]);
+      edges.add(nodes[i + 1]);
+      s += sqrt((nodes[i] - nodes[i + 1]).distanceSquared);
+    }
     setState(() {
       totalDistance = s;
-      if (totalDistance < bestDistance){
+      if (totalDistance < bestDistance) {
         bestDistance = totalDistance;
       }
     });
@@ -88,33 +88,43 @@ class _MyHomePageState extends State<MyHomePage> {
             children: [
               Padding(
                   padding: const EdgeInsets.all(5.0),
-                  child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {    
-                          if (isFirstTime){
-                            _nodes = generateNodes(
-                              4,
-                              constraints.maxWidth.toInt(),
-                              constraints.maxHeight.toInt());
-                              isFirstTime = false;                              
-                          }
-                          else{
-                            Random random = Random();
-                            int i = random.nextInt(_nodes.length);
-                            int j = random.nextInt(_nodes.length);
-                            _nodes.swap(i, j);                                                        
-                          }
-                          _edges = generateEdges(_nodes);                                              
-                        });
-                      },
-                      child: const Text("Swap"))),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              if (_nodes.isNotEmpty) {
+                                Random random = Random();
+                                int i = random.nextInt(_nodes.length);
+                                int j = random.nextInt(_nodes.length);
+                                _nodes.swap(i, j);
+                                _edges = generateEdges(_nodes);
+                              }
+                            });
+                          },
+                          child: const Text("Swap")),
+                      ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _nodes = generateNodes(
+                                  4,
+                                  constraints.maxWidth.toInt(),
+                                  constraints.maxHeight.toInt());
+                              _edges = generateEdges(_nodes);
+                            });
+                          },
+                          child: const Text("New")),
+                      ElevatedButton(
+                          onPressed: () {}, child: const Text("Step"))
+                    ],
+                  )),
               Expanded(
                 child: ClipRect(
                     child: CustomPaint(
-                        painter: MyPainter(_nodes, _edges),
-                        size: Size(
-                            constraints.maxWidth, constraints.maxHeight),
-                        )),
+                  painter: MyPainter(_nodes, _edges),
+                  size: Size(constraints.maxWidth, constraints.maxHeight),
+                )),
               ),
               Padding(
                   padding: const EdgeInsets.all(5.0),
