@@ -40,9 +40,9 @@ void main() {
   ];
 
   var dist = calcDist(n, coord);
-  var startingTown = List<int>.filled(0, n);
-  var endingTown = List<int>.filled(0, n);
-  var bestSolution = List<int>.filled(0, n);
+  var startingTown = List<int>.filled(n, 0);
+  var endingTown = List<int>.filled(n, 0);
+  var bestSolution = List<int>.filled(n, 0);
 
   // print(dist);
   
@@ -112,7 +112,7 @@ void branchAndBound(int n, Matrix dist, int iteration, double lowerBound, double
     return;
   }
 
-  var listZeros = <int>[];  
+  var listZeros = <List<int>>[];  
 
   // number of zeros in rows and columns
   var nbZerosR = <int>[];
@@ -122,11 +122,65 @@ void branchAndBound(int n, Matrix dist, int iteration, double lowerBound, double
     nbZerosR.add(m.row(i).where((x) => x == 0).length);
     nbZerosC.add(m.column(i).where((x) => x == 0).length);
   }
+
+  var maxZero = [-1, 0, 0];
+  for (int i = 0; i < n; i++){
+    for (int j = 0; j < n; j++){
+      if (m[i][j] == 0){                
+        
+        var minR = (nbZerosR[i] > 1) ? 0 : m.row(i).where((x)=> x != 0).toList().reduce(min);                
+        var minC = (nbZerosC[j] > 1) ? 0 : m.column(j).where((x)=> x != 0).toList().reduce(min);
+
+        if (minR == double.infinity){minR = 0;}
+        if (minC == double.infinity){minC = 0;}
+
+        int v = minR.toInt() + minC.toInt();
+        listZeros.add([v, i, j]);
+
+        if (maxZero[0] < v){
+          maxZero = [v, i, j];
+        }
+      }
+    }
+  }
+
+  if (listZeros.isEmpty){
+    return;
+  }
+
+  startingTown[iteration] = maxZero[1];
+  endingTown[iteration] = maxZero[2];
+
+  Matrix m2 = Matrix.zero(n, n);
+  for (int i = 0; i < n; i++){    
+    for (int j = 0; j < n; j++){
+      m2[i][j] = dist[i][j];      
+    }
+  }
+
+  m2[maxZero[2]][maxZero[1]] = double.infinity;
+  m2.setRow(List<double>.filled(n, double.infinity), maxZero[1]);
+  m2.setColumn(List<double>.filled(n, double.infinity), maxZero[2]);
+
+  // explore left branch
+  branchAndBound(n, m2, iteration + 1, evalChildNode, bestEval, startingTown, endingTown, bestSolution);
+
+  Matrix m3 = Matrix.zero(n, n);
+  for (int i = 0; i < n; i++){    
+    for (int j = 0; j < n; j++){
+      m3[i][j] = dist[i][j];      
+    }
+  }
+
+  m3[maxZero[2]][maxZero[1]] = double.infinity;
+  m3[maxZero[1]][maxZero[2]] = double.infinity;
   
+  // explore right branch
+  branchAndBound(n, m3, iteration, evalChildNode, bestEval, startingTown, endingTown, bestSolution);
 }
 
 void buildSolution(int n, Matrix dist, List<int> startingTown, List<int> endingTown, List<int> bestSolution, double bestEval) {
-  var solution = List<int>.filled(0, n);
+  var solution = List<int>.filled(n, 0);
   int currentIndex = 0;
   int currentNode = 0;
   while (currentIndex < n){
@@ -157,6 +211,9 @@ void buildSolution(int n, Matrix dist, List<int> startingTown, List<int> endingT
     for (int i = 0; i < n; i++){
       bestSolution[i] = solution[i];
     }
+    print("New best solution : ");
+    print(solution);
+    print(bestEval);
   }
   return;
 }
@@ -171,7 +228,7 @@ double evaluateSolution(List<int> solution, int n, Matrix dist) {
 }
 
 double buildNextNeighbor(double bestEval, int n, Matrix dist, List<int> bestSolution) {
-  var sol = List<int>.filled(0, n);
+  var sol = List<int>.filled(n, 0);
   double eval = 0;
   for (int i = 1; i < n; i++){
     sol[i] = i;
