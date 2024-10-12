@@ -42,7 +42,8 @@ List<List<double>> coord = [
     [580.0,  1175.0],
     [650.0,  1130.0],
   ];
-var dist = calcDist(n, coord);    
+var dist = calcDist(n, coord);   
+
 
 void main() {  
   

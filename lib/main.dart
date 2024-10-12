@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'BranchAndBound.dart';
 
 extension Swappable on List {
   void swap(int a, int b) {
@@ -42,13 +43,21 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   var _nodes = <Offset>[];
   var _edges = <Offset>[];
+  int numNodes = 0;
   double totalDistance = 0;
   double bestDistance = double.infinity;
   bool isFirstTime = true;
+  final TextEditingController controller = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 
   generateEdges(List<Offset> nodes) {
@@ -78,6 +87,32 @@ class _MyHomePageState extends State<MyHomePage> {
     return nodes;
   }
 
+  void branchBound() {
+    var bestSolution = <int>[];
+    List<List<double>> input = [];
+    for (int i = 0; i < _nodes.length; i++) {
+      input.add([_nodes[i].dx, _nodes[i].dy]);
+    }
+    var bb = BranchAndBound(input);
+    bestSolution = bb.run();
+
+    var edges = <Offset>[];
+    double s = 0;
+    for (int i = 0; i < _nodes.length - 1; i++) {
+      edges.add(_nodes[bestSolution[i]]);
+      edges.add(_nodes[bestSolution[i + 1]]);
+      s += sqrt((_nodes[i] - _nodes[i + 1]).distanceSquared);
+    }
+
+    setState(() {
+      totalDistance = s;
+      if (totalDistance < bestDistance) {
+        bestDistance = totalDistance;
+      }
+      _edges = edges;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,32 +126,68 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              if (_nodes.isNotEmpty) {
-                                Random random = Random();
-                                int i = random.nextInt(_nodes.length);
-                                int j = random.nextInt(_nodes.length);
-                                _nodes.swap(i, j);
-                                _edges = generateEdges(_nodes);
-                              }
-                            });
-                          },
-                          child: const Text("Swap")),
-                      ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _nodes = generateNodes(
-                                  4,
-                                  constraints.maxWidth.toInt(),
-                                  constraints.maxHeight.toInt());
-                              _edges = generateEdges(_nodes);
-                            });
-                          },
-                          child: const Text("New")),
-                      ElevatedButton(
-                          onPressed: () {}, child: const Text("Step"))
+                      Expanded(
+                        flex: 3,
+                        child: SizedBox(
+                          height: 50,
+                          child: TextField(
+                            textAlign: TextAlign.center,
+                            controller: controller,
+                            keyboardType: TextInputType.number,
+                            decoration:
+                                const InputDecoration(hintText: "Num nodes", hintMaxLines: 2),
+                          ),
+                        ),
+                      ),
+                      const Spacer(flex: 1),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                if (_nodes.isNotEmpty) {
+                                  Random random = Random();
+                                  int i = random.nextInt(_nodes.length);
+                                  int j = random.nextInt(_nodes.length);
+                                  _nodes.swap(i, j);
+                                  _edges = generateEdges(_nodes);
+                                }
+                              });
+                            },
+                            child: const Text("Swap")),
+                      ),
+                      const Spacer(flex: 1),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                totalDistance = 0;
+                                bestDistance = double.infinity;
+                                if (controller.text.isNotEmpty){
+                                  numNodes = int.parse(controller.text);
+                                }
+                                else{
+                                  numNodes = 4;
+                                }
+                                _nodes = generateNodes(
+                                    numNodes,
+                                    constraints.maxWidth.toInt(),
+                                    constraints.maxHeight.toInt());
+                                _edges = generateEdges(_nodes);                                
+                              });
+                            },
+                            child: const Text("New")),
+                      ),
+                      const Spacer(flex: 1),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                            onPressed: () {
+                              branchBound();
+                            },
+                            child: const Text("Solve")),
+                      )
                     ],
                   )),
               Expanded(
