@@ -7,7 +7,7 @@ import time
 start_time = time.time()
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
-NB_TOWNS = 10
+NB_TOWNS = 4
 
 starting_town = [None] * NB_TOWNS
 ending_town = [None] * NB_TOWNS
@@ -33,6 +33,13 @@ coord = np.array([
     [650.0,  1130.0],
 
 ])"""
+
+coord = np.array([
+    [2, 1],
+    [4, 5],
+    [5, 2],
+    [8, 3]
+])
 
 dist = np.zeros((NB_TOWNS,NB_TOWNS))
 
@@ -92,6 +99,7 @@ def build_next_neighbor():
 
 #Builds final solution
 def build_solution():
+    print("build_solution called")
     global best_eval
     solution = [None] * NB_TOWNS
     currentIndex = 0
@@ -137,6 +145,9 @@ def branch_and_bound(dist, iteration, evalParentNode):
     global count
     count += 1
     #print(count)
+
+    print("iteration", iteration)
+    print("dist", dist)
 
 
     if (iteration == NB_TOWNS):
@@ -212,6 +223,7 @@ def branch_and_bound(dist, iteration, evalParentNode):
 
 
     if listZeros == []:
+        print("listZeros is empty")
         return
     
     #Updates paths
@@ -251,11 +263,13 @@ f = open("berlin52.tsp", "r")
 f.seek(128)
 
 #Read each line
+'''
 for i in range(NB_TOWNS):
     line = f.readline()
     l = line.split()
     coord[i][0] = float(l[1])
     coord[i][1] = float(l[2])
+'''
 
 
 #Prints cities coordinates
