@@ -217,9 +217,9 @@ class BranchAndBound {
       for (int i = 0; i < n; i++) {
         bestSolution[i] = solution[i];
       }
-      print("New best solution : ");
-      print(solution);
-      print(bestEval);
+      // print("New best solution : ");
+      // print(solution);
+      // print(bestEval);
     }
     return;
   }
@@ -252,11 +252,11 @@ class BranchAndBound {
 
   List<int> run(){
     branchAndBound(dist, iteration, lowerBound);
-    print("Number of iterations : $count");
-    print("Best solution:");
-    print(bestSolution);
-    print("Best evaluation:");
-    print(bestEval);
+    // print("Number of iterations : $count");
+    // print("Best solution:");
+    // print(bestSolution);
+    // print("Best evaluation:");
+    // print(bestEval);
     return bestSolution;
   }
 }

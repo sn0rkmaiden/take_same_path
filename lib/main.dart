@@ -40,7 +40,8 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   var _nodes = <Offset>[];
   var _edges = <Offset>[];
   int numNodes = 0;
@@ -48,10 +49,31 @@ class _MyHomePageState extends State<MyHomePage> {
   double bestDistance = double.infinity;
   bool isFirstTime = true;
   final TextEditingController controller = TextEditingController();
+  double _progress = 0.0;
+  late Animation<double> animation;
+  late AnimationController animationController;
+  bool isComplete = false;
 
   @override
   void initState() {
     super.initState();
+
+    animationController = AnimationController(
+        duration: const Duration(milliseconds: 3000), vsync: this)
+      ..addStatusListener((AnimationStatus status) {
+        if (status == AnimationStatus.completed) {
+          isComplete = true;
+        } else {
+          isComplete = false;
+        }
+      });
+
+    animation = Tween(begin: 0.0, end: 1.0).animate(animationController)
+      ..addListener(() {
+        setState(() {
+          _progress = animation.value;
+        });
+      });
   }
 
   @override
@@ -60,13 +82,10 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
-  generateEdges(List<Offset> nodes) {
+  calculateDistance(List<Offset> edges){
     double s = 0;
-    var edges = <Offset>[];
-    for (int i = 0; i < nodes.length - 1; i++) {
-      edges.add(nodes[i]);
-      edges.add(nodes[i + 1]);
-      s += sqrt((nodes[i] - nodes[i + 1]).distanceSquared);
+    for (int i = 0; i < edges.length - 1; i++) {
+      s += sqrt((edges[i] - edges[i + 1]).distanceSquared);        
     }
     setState(() {
       totalDistance = s;
@@ -74,6 +93,14 @@ class _MyHomePageState extends State<MyHomePage> {
         bestDistance = totalDistance;
       }
     });
+  }
+
+  generateEdges(List<Offset> nodes) {
+    var edges = <Offset>[];
+    for (int i = 0; i < nodes.length - 1; i++) {
+      edges.add(nodes[i]);
+      edges.add(nodes[i + 1]);      
+    }    
     return edges;
   }
 
@@ -81,13 +108,13 @@ class _MyHomePageState extends State<MyHomePage> {
     Random random = Random();
     var nodes = <Offset>[];
     for (int i = 0; i < n; i++) {
-      nodes.add(Offset(
-          random.nextInt(width).toDouble(), random.nextInt(height).toDouble()));
+      nodes.add(Offset(random.nextInt(width).toDouble(),
+          random.nextInt(height).toDouble()));
     }
     return nodes;
   }
 
-  void branchBound() {
+  branchBound() {
     var bestSolution = <int>[];
     List<List<double>> input = [];
     for (int i = 0; i < _nodes.length; i++) {
@@ -96,21 +123,22 @@ class _MyHomePageState extends State<MyHomePage> {
     var bb = BranchAndBound(input);
     bestSolution = bb.run();
 
-    var edges = <Offset>[];
-    double s = 0;
-    for (int i = 0; i < _nodes.length - 1; i++) {
-      edges.add(_nodes[bestSolution[i]]);
-      edges.add(_nodes[bestSolution[i + 1]]);
-      s += sqrt((_nodes[i] - _nodes[i + 1]).distanceSquared);
-    }
+    // var edges = <Offset>[];
+    var nodes = <Offset>[];
 
-    setState(() {
-      totalDistance = s;
-      if (totalDistance < bestDistance) {
-        bestDistance = totalDistance;
-      }
-      _edges = edges;
-    });
+    for (int i = 0; i < _nodes.length; i++) {
+      nodes.add(_nodes[bestSolution[i]]);
+    }    
+    /*for (int i = 0; i < nodes.length - 1; i++) {
+      edges.add(nodes[bestSolution[i]]);
+      edges.add(nodes[bestSolution[i + 1]]);      
+    }    
+  
+    setState(() {  
+      _nodes = nodes;    
+      _edges = edges;                  
+    });  */
+    return nodes;
   }
 
   @override
@@ -134,8 +162,8 @@ class _MyHomePageState extends State<MyHomePage> {
                             textAlign: TextAlign.center,
                             controller: controller,
                             keyboardType: TextInputType.number,
-                            decoration:
-                                const InputDecoration(hintText: "Num nodes", hintMaxLines: 2),
+                            decoration: const InputDecoration(
+                                hintText: "Num nodes", hintMaxLines: 2),
                           ),
                         ),
                       ),
@@ -147,10 +175,13 @@ class _MyHomePageState extends State<MyHomePage> {
                               setState(() {
                                 if (_nodes.isNotEmpty) {
                                   Random random = Random();
-                                  int i = random.nextInt(_nodes.length);
-                                  int j = random.nextInt(_nodes.length);
+                                  int i = random.nextInt(_nodes.length - 1) + 1;
+                                  int j = random.nextInt(_nodes.length - 1) + 1;
                                   _nodes.swap(i, j);
                                   _edges = generateEdges(_nodes);
+                                  calculateDistance(_edges);
+                                  animationController.reset();
+                                  animationController.forward();                                  
                                 }
                               });
                             },
@@ -164,18 +195,21 @@ class _MyHomePageState extends State<MyHomePage> {
                               setState(() {
                                 totalDistance = 0;
                                 bestDistance = double.infinity;
-                                if (controller.text.isNotEmpty){
+                                if (controller.text.isNotEmpty) {
                                   numNodes = int.parse(controller.text);
-                                }
-                                else{
+                                } else {
                                   numNodes = 4;
                                 }
                                 _nodes = generateNodes(
                                     numNodes,
                                     constraints.maxWidth.toInt(),
                                     constraints.maxHeight.toInt());
-                                _edges = generateEdges(_nodes);                                
+                                _edges = generateEdges(_nodes);
+                                calculateDistance(_edges);
                               });
+
+                              animationController.reset();
+                              animationController.forward();                              
                             },
                             child: const Text("New")),
                       ),
@@ -184,18 +218,34 @@ class _MyHomePageState extends State<MyHomePage> {
                         flex: 2,
                         child: ElevatedButton(
                             onPressed: () {
-                              branchBound();
+                              setState(() {
+                                List<Offset> nodes = branchBound();
+                                _nodes = nodes;
+                                _edges = generateEdges(_nodes);
+                                calculateDistance(_edges);
+
+                                animationController.reset();
+                                animationController.forward();
+                              });                                                            
                             },
                             child: const Text("Solve")),
                       )
                     ],
                   )),
-              Expanded(
-                child: ClipRect(
-                    child: CustomPaint(
-                  painter: MyPainter(_nodes, _edges),
-                  size: Size(constraints.maxWidth, constraints.maxHeight),
-                )),
+              AnimatedBuilder(
+                animation: animationController,
+                builder: (BuildContext context, _) {
+                  return Expanded(
+                    child: ClipRect(
+                        child: SizedBox(
+                      height: 300,
+                      child: CustomPaint(
+                        painter: MyPainter(_nodes, _edges, _progress),
+                        size: Size(constraints.maxWidth, constraints.maxHeight),
+                      ),
+                    )),
+                  );
+                },
               ),
               Padding(
                   padding: const EdgeInsets.all(5.0),
@@ -216,8 +266,9 @@ class _MyHomePageState extends State<MyHomePage> {
 class MyPainter extends CustomPainter {
   var _nodes = <Offset>[];
   var _edges = <Offset>[];
+  final double _progress;
 
-  MyPainter(nodes, edges) {
+  MyPainter(nodes, edges, this._progress) {
     _nodes = nodes;
     _edges = edges;
   }
@@ -227,8 +278,7 @@ class MyPainter extends CustomPainter {
     Paint nodesPaint = Paint()
       ..strokeWidth = 20
       ..strokeCap = StrokeCap.butt
-      ..style = PaintingStyle.stroke
-      ..color = Colors.lightBlue;
+      ..style = PaintingStyle.stroke;
 
     Paint edgesPaint = Paint()
       ..strokeWidth = 5
@@ -236,12 +286,41 @@ class MyPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..color = Colors.redAccent;
 
-    canvas.drawPoints(PointMode.lines, _edges, edgesPaint);
-    canvas.drawPoints(PointMode.points, _nodes, nodesPaint);
+    // canvas.drawPoints(PointMode.lines, _edges, edgesPaint);
+    if (_nodes.isNotEmpty) {
+      Path path = getPath();
+      PathMetrics pathMetrics = path.computeMetrics();
+      PathMetric pathMetric = pathMetrics.elementAt(0);
+      final pos = pathMetric.getTangentForOffset(pathMetric.length * _progress);
+      Path extracted =
+          pathMetric.extractPath(0.0, pathMetric.length * _progress);
+      canvas.drawPath(extracted, edgesPaint);
+
+      canvas.drawPoints(
+          PointMode.points,
+          [_nodes[0]],
+          nodesPaint
+            ..strokeWidth = 30
+            ..color = Colors.deepPurple);
+      canvas.drawPoints(
+          PointMode.points,
+          _nodes.sublist(1),
+          nodesPaint
+            ..strokeWidth = 20
+            ..color = Colors.lightBlue);
+    }
+  }
+
+  Path getPath() {
+    Path p = Path()..moveTo(_nodes[0].dx, _nodes[0].dy);
+    for (int i = 1; i < _nodes.length; i++) {
+      p.lineTo(_nodes[i].dx, _nodes[i].dy);
+    }
+    return p;
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
+  bool shouldRepaint(covariant MyPainter oldDelegate) {
+    return (oldDelegate._progress != _progress);
   }
 }
