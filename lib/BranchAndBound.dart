@@ -217,9 +217,9 @@ class BranchAndBound {
       for (int i = 0; i < n; i++) {
         bestSolution[i] = solution[i];
       }
-      print("New best solution : ");
-      print(solution);
-      print(bestEval);
+      // print("New best solution : ");
+      // print(solution);
+      // print(bestEval);
     }
     return;
   }
