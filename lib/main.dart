@@ -44,6 +44,10 @@ class _MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin {
   var _nodes = <Offset>[];
   var _edges = <Offset>[];
+  int canvasWidth = 0;
+  int canvasHeight = 0;
+  int screenWidth = 0;
+  int screenHeight = 0;
   int numNodes = 0;
   double totalDistance = 0;
   double bestDistance = double.infinity;
@@ -82,10 +86,10 @@ class _MyHomePageState extends State<MyHomePage>
     super.dispose();
   }
 
-  calculateDistance(List<Offset> edges){
+  calculateDistance(List<Offset> edges) {
     double s = 0;
     for (int i = 0; i < edges.length - 1; i++) {
-      s += sqrt((edges[i] - edges[i + 1]).distanceSquared);        
+      s += sqrt((edges[i] - edges[i + 1]).distanceSquared);
     }
     setState(() {
       totalDistance = s;
@@ -99,8 +103,8 @@ class _MyHomePageState extends State<MyHomePage>
     var edges = <Offset>[];
     for (int i = 0; i < nodes.length - 1; i++) {
       edges.add(nodes[i]);
-      edges.add(nodes[i + 1]);      
-    }    
+      edges.add(nodes[i + 1]);
+    }
     return edges;
   }
 
@@ -108,8 +112,8 @@ class _MyHomePageState extends State<MyHomePage>
     Random random = Random();
     var nodes = <Offset>[];
     for (int i = 0; i < n; i++) {
-      nodes.add(Offset(random.nextInt(width).toDouble(),
-          random.nextInt(height).toDouble()));
+      nodes.add(Offset(
+          random.nextInt(width).toDouble(), random.nextInt(height).toDouble()));
     }
     return nodes;
   }
@@ -128,7 +132,7 @@ class _MyHomePageState extends State<MyHomePage>
 
     for (int i = 0; i < _nodes.length; i++) {
       nodes.add(_nodes[bestSolution[i]]);
-    }    
+    }
     /*for (int i = 0; i < nodes.length - 1; i++) {
       edges.add(nodes[bestSolution[i]]);
       edges.add(nodes[bestSolution[i + 1]]);      
@@ -143,6 +147,10 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   Widget build(BuildContext context) {
+    screenWidth = MediaQuery.of(context).size.width.toInt();
+    screenHeight = MediaQuery.of(context).size.height.toInt();
+    canvasHeight = screenHeight ~/ 2;
+    canvasWidth = screenWidth * 9 ~/ 10;
     return Scaffold(
         appBar: AppBar(title: const Text("Take Same Path")),
         body: LayoutBuilder(
@@ -181,7 +189,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   _edges = generateEdges(_nodes);
                                   calculateDistance(_edges);
                                   animationController.reset();
-                                  animationController.forward();                                  
+                                  animationController.forward();
                                 }
                               });
                             },
@@ -194,22 +202,20 @@ class _MyHomePageState extends State<MyHomePage>
                             onPressed: () {
                               setState(() {
                                 totalDistance = 0;
-                                bestDistance = double.infinity;
+                                bestDistance = double.infinity;                                                                
                                 if (controller.text.isNotEmpty) {
                                   numNodes = int.parse(controller.text);
                                 } else {
                                   numNodes = 4;
                                 }
                                 _nodes = generateNodes(
-                                    numNodes,
-                                    constraints.maxWidth.toInt(),
-                                    constraints.maxHeight.toInt());
+                                    numNodes, canvasWidth, canvasHeight);
                                 _edges = generateEdges(_nodes);
                                 calculateDistance(_edges);
                               });
 
                               animationController.reset();
-                              animationController.forward();                              
+                              animationController.forward();
                             },
                             child: const Text("New")),
                       ),
@@ -226,7 +232,7 @@ class _MyHomePageState extends State<MyHomePage>
 
                                 animationController.reset();
                                 animationController.forward();
-                              });                                                            
+                              });
                             },
                             child: const Text("Solve")),
                       )
@@ -236,14 +242,13 @@ class _MyHomePageState extends State<MyHomePage>
                 animation: animationController,
                 builder: (BuildContext context, _) {
                   return Expanded(
-                    child: ClipRect(
-                        child: SizedBox(
-                      height: 300,
+                    child: ClipRect(                                            
                       child: CustomPaint(
                         painter: MyPainter(_nodes, _edges, _progress),
-                        size: Size(constraints.maxWidth, constraints.maxHeight),
+                        size: Size(
+                            canvasWidth.toDouble(), canvasHeight.toDouble()),                          
                       ),
-                    )),
+                    ),
                   );
                 },
               ),
