@@ -54,12 +54,6 @@ class _MyHomePageState extends State<MyHomePage>
   double totalUserDistance = 0;
   bool isFirstTime = true;
   final TextEditingController controller = TextEditingController();
-  double _progress = 0.0;
-  late Animation<double> animation;
-  late AnimationController animationController;
-  bool isComplete = false;
-  Offset tappedPoint = Offset.infinite;
-  List<Offset> tappedPoints = [];
 
   @override
   void initState() {
@@ -89,9 +83,12 @@ class _MyHomePageState extends State<MyHomePage>
     super.dispose();
   }
 
-  calculateDistance(List<Offset> nodes) {
+  generateEdges(List<Offset> nodes) {
     double s = 0;
+    var edges = <Offset>[];
     for (int i = 0; i < nodes.length - 1; i++) {
+      edges.add(nodes[i]);
+      edges.add(nodes[i + 1]);
       s += sqrt((nodes[i] - nodes[i + 1]).distanceSquared);
     }
     setState(() {
@@ -100,14 +97,6 @@ class _MyHomePageState extends State<MyHomePage>
         bestDistance = totalDistance;
       }
     });
-  }
-
-  /*generateEdges(List<Offset> nodes) {
-    var edges = <Offset>[];
-    for (int i = 0; i < nodes.length - 1; i++) {
-      edges.add(nodes[i]);
-      edges.add(nodes[i + 1]);
-    }
     return edges;
   }*/
 
@@ -130,21 +119,25 @@ class _MyHomePageState extends State<MyHomePage>
     var bb = BranchAndBound(input);
     bestSolution = bb.run();
 
-    // var edges = <Offset>[];
-    var nodes = <Offset>[];
-
-    for (int i = 0; i < _nodes.length; i++) {
-      nodes.add(_nodes[bestSolution[i]]);
+    var edges = <Offset>[];
+    double s = 0;
+    for (int i = 0; i < _nodes.length - 1; i++) {
+      edges.add(_nodes[bestSolution[i]]);
+      edges.add(_nodes[bestSolution[i + 1]]);
+      s += sqrt((_nodes[i] - _nodes[i + 1]).distanceSquared);
     }
-    return nodes;
+
+    setState(() {
+      totalDistance = s;
+      if (totalDistance < bestDistance) {
+        bestDistance = totalDistance;
+      }
+      _edges = edges;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    screenWidth = MediaQuery.of(context).size.width.toInt();
-    screenHeight = MediaQuery.of(context).size.height.toInt();
-    canvasHeight = screenHeight ~/ 3;
-    canvasWidth = screenWidth * 9 ~/ 10;
     return Scaffold(
         appBar: AppBar(title: const Text("Take Same Path")),
         body: LayoutBuilder(
@@ -163,7 +156,9 @@ class _MyHomePageState extends State<MyHomePage>
                           child: TextField(
                             textAlign: TextAlign.center,
                             controller: controller,
-                            keyboardType: TextInputType.number,                            
+                            keyboardType: TextInputType.number,
+                            decoration:
+                                const InputDecoration(hintText: "Num nodes", hintMaxLines: 2),
                           ),
                         ),
                       ),
@@ -180,9 +175,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   int i = random.nextInt(_nodes.length - 1) + 1;
                                   int j = random.nextInt(_nodes.length - 1) + 1;
                                   _nodes.swap(i, j);
-                                  calculateDistance(_nodes);
-                                  animationController.reset();
-                                  animationController.forward();
+                                  _edges = generateEdges(_nodes);
                                 }
                               });
                             },
@@ -202,19 +195,18 @@ class _MyHomePageState extends State<MyHomePage>
                               setState(() {
                                 totalDistance = 0;
                                 bestDistance = double.infinity;
-                                // if (controller.text.isNotEmpty) {
-                                // numNodes = int.parse(controller.text);
-                                // } else {
-                                numNodes = 4;
-                                // }
+                                if (controller.text.isNotEmpty){
+                                  numNodes = int.parse(controller.text);
+                                }
+                                else{
+                                  numNodes = 4;
+                                }
                                 _nodes = generateNodes(
-                                    numNodes, canvasWidth, canvasHeight);
-                                tappedPoints = [_nodes.first];
-                                totalUserDistance = 0;
-                                calculateDistance(_nodes);
+                                    numNodes,
+                                    constraints.maxWidth.toInt(),
+                                    constraints.maxHeight.toInt());
+                                _edges = generateEdges(_nodes);                                
                               });
-                              animationController.reset();
-                              animationController.forward();
                             },
                             child: const Text("New")),
                       ),
@@ -223,74 +215,24 @@ class _MyHomePageState extends State<MyHomePage>
                         flex: 2,
                         child: ElevatedButton(
                             onPressed: () {
-                              setState(() {
-                                List<Offset> nodes = branchBound();
-                                _nodes = nodes;
-                                calculateDistance(_nodes);
-
-                                animationController.reset();
-                                animationController.forward();
-                              });
+                              branchBound();
                             },
                             child: const Text("Solve")),
                       )
                     ],
                   )),
-              AnimatedBuilder(
-                animation: animationController,
-                builder: (BuildContext context, _) {
-                  return Expanded(
-                    child: ClipRect(
-                      child: Column(
-                        children: [
-                          CustomPaint(
-                            painter: MyPainter(_nodes, _progress),
-                            size: Size(canvasWidth.toDouble(),
-                                canvasHeight.toDouble()),
-                          ),
-                          Padding(
-                              padding: const EdgeInsets.all(5.0),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  Text(totalDistance.toStringAsFixed(3),
-                                      style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold)),
-                                  Text("Best: ${bestDistance.toStringAsFixed(3)}",
-                                      style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold))
-                                ],
-                              )),
-                          GestureDetector(
-                            onPanDown: (details) {
-                              setState(() {
-                                tappedPoint = details.localPosition;
-                                if (tappedPoints.isNotEmpty &
-                                    (tappedPoints.length < _nodes.length)) {
-                                  tappedPoints.add(tappedPoint);
-                                  double s = 0;
-                                for (int i = 0; i < tappedPoints.length - 1; i++) {
-                                  s += sqrt((tappedPoints[i] - tappedPoints[i + 1]).distanceSquared);
-                                }
-                                  totalUserDistance = s;
-                                }                                
-                              });
-                            },
-                            child: CustomPaint(
-                                painter: UserPainter(
-                                    _nodes, _progress, tappedPoints),
-                                size: Size(canvasWidth.toDouble(),
-                                    canvasHeight.toDouble())),
-                          )
-                        ],
-                      ),
-                    ),
-                  );
-                },
+              Expanded(
+                child: ClipRect(
+                    child: CustomPaint(
+                  painter: MyPainter(_nodes, _edges),
+                  size: Size(constraints.maxWidth, constraints.maxHeight),
+                )),
               ),
+              Padding(
+                  padding: const EdgeInsets.all(5.0),
+                  child: Text(totalDistance.toStringAsFixed(3),
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold))),
               Padding(
                   padding: const EdgeInsets.all(5.0),
                   child: Row(
@@ -309,9 +251,9 @@ class _MyHomePageState extends State<MyHomePage>
 
 class MyPainter extends CustomPainter {
   var _nodes = <Offset>[];
-  final double _progress;
+  var _edges = <Offset>[];
 
-  MyPainter(nodes, this._progress) {
+  MyPainter(nodes, edges) {
     _nodes = nodes;
   }
 
@@ -326,62 +268,7 @@ class MyPainter extends CustomPainter {
       ..strokeWidth = 5
       ..strokeCap = StrokeCap.butt
       ..style = PaintingStyle.stroke
-      ..color = Colors.redAccent;
-
-    if (_nodes.isNotEmpty) {
-      Path path = getPath();
-      PathMetrics pathMetrics = path.computeMetrics();
-      PathMetric pathMetric = pathMetrics.elementAt(0);
-      final pos = pathMetric.getTangentForOffset(pathMetric.length * _progress);
-      Path extracted =
-          pathMetric.extractPath(0.0, pathMetric.length * _progress);
-      canvas.drawPath(extracted, edgesPaint);
-
-      canvas.drawPoints(
-          PointMode.points,
-          [_nodes[0]],
-          nodesPaint
-            ..strokeWidth = 30
-            ..color = Colors.deepPurple);
-      canvas.drawPoints(
-          PointMode.points,
-          _nodes.sublist(1),
-          nodesPaint
-            ..strokeWidth = 20
-            ..color = Colors.lightBlue);
-    }
-  }
-
-  Path getPath() {
-    Path p = Path()..moveTo(_nodes[0].dx, _nodes[0].dy);
-    for (int i = 1; i < _nodes.length; i++) {
-      p.lineTo(_nodes[i].dx, _nodes[i].dy);
-    }
-    return p;
-  }
-
-  @override
-  bool shouldRepaint(covariant MyPainter oldDelegate) {
-    return (oldDelegate._progress != _progress);
-  }
-}
-
-class UserPainter extends CustomPainter {
-  var _nodes = <Offset>[];
-  final double _progress;
-  List<Offset> _tappedPoints = [];
-
-  UserPainter(nodes, this._progress, tappedPoints) {
-    _nodes = nodes;
-    _tappedPoints = tappedPoints;
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint nodesPaint = Paint()
-      ..strokeWidth = 20
-      ..strokeCap = StrokeCap.butt
-      ..style = PaintingStyle.stroke;
+      ..color = Colors.lightBlue;
 
     Paint edgesPaint = Paint()
       ..strokeWidth = 5
@@ -389,46 +276,12 @@ class UserPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..color = Colors.redAccent;
 
-    if (_nodes.isNotEmpty) {
-      if ((_tappedPoints.length > 1) &
-          (_tappedPoints.length <= _nodes.length)) {
-        for (int i = 0; i < _tappedPoints.length - 1; i++) {
-          canvas.drawLine(_tappedPoints[i], _tappedPoints[i + 1], edgesPaint);
-        }
-      }
-      /*Path path = getPath();
-      PathMetrics pathMetrics = path.computeMetrics();
-      PathMetric pathMetric = pathMetrics.elementAt(0);
-      final pos = pathMetric.getTangentForOffset(pathMetric.length * _progress);
-      Path extracted =
-          pathMetric.extractPath(0.0, pathMetric.length * _progress);
-      canvas.drawPath(extracted, edgesPaint);*/
-
-      canvas.drawPoints(
-          PointMode.points,
-          [_nodes[0]],
-          nodesPaint
-            ..strokeWidth = 30
-            ..color = Colors.deepPurple);
-      canvas.drawPoints(
-          PointMode.points,
-          _nodes.sublist(1),
-          nodesPaint
-            ..strokeWidth = 20
-            ..color = Colors.lightBlue);
-    }
-  }
-
-  Path getPath() {
-    Path p = Path()..moveTo(_nodes[0].dx, _nodes[0].dy);
-    for (int i = 1; i < _nodes.length; i++) {
-      p.lineTo(_nodes[i].dx, _nodes[i].dy);
-    }
-    return p;
+    canvas.drawPoints(PointMode.lines, _edges, edgesPaint);
+    canvas.drawPoints(PointMode.points, _nodes, nodesPaint);
   }
 
   @override
-  bool shouldRepaint(covariant UserPainter oldDelegate) {
-    return (oldDelegate._progress != _progress);
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true;
   }
 }
