@@ -94,6 +94,7 @@ class _MyHomePageState extends State<MyHomePage>
     for (int i = 0; i < nodes.length - 1; i++) {
       s += sqrt((nodes[i] - nodes[i + 1]).distanceSquared);
     }
+    s += sqrt((nodes.last - nodes.first).distanceSquared);
     setState(() {
       totalDistance = s;
       if (totalDistance < bestDistance) {
@@ -202,13 +203,10 @@ class _MyHomePageState extends State<MyHomePage>
                               setState(() {
                                 totalDistance = 0;
                                 bestDistance = double.infinity;
-                                // if (controller.text.isNotEmpty) {
-                                // numNodes = int.parse(controller.text);
-                                // } else {
-                                numNodes = 4;
-                                // }
+                                numNodes = 5;
                                 _nodes = generateNodes(
                                     numNodes, canvasWidth, canvasHeight);
+                                print("Generated nodes: $_nodes");
                                 tappedPoints = [_nodes.first];
                                 totalUserDistance = 0;
                                 calculateDistance(_nodes);
@@ -258,7 +256,8 @@ class _MyHomePageState extends State<MyHomePage>
                                       style: const TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold)),
-                                  Text("Best: ${bestDistance.toStringAsFixed(3)}",
+                                  Text(
+                                      "Best: ${bestDistance.toStringAsFixed(3)}",
                                       style: const TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold))
@@ -272,11 +271,20 @@ class _MyHomePageState extends State<MyHomePage>
                                     (tappedPoints.length < _nodes.length)) {
                                   tappedPoints.add(tappedPoint);
                                   double s = 0;
-                                for (int i = 0; i < tappedPoints.length - 1; i++) {
-                                  s += sqrt((tappedPoints[i] - tappedPoints[i + 1]).distanceSquared);
-                                }
+                                  for (int i = 0;
+                                      i < tappedPoints.length - 1;
+                                      i++) {
+                                    s += sqrt(
+                                        (tappedPoints[i] - tappedPoints[i + 1])
+                                            .distanceSquared);
+                                  }
+                                  if (tappedPoints.length == _nodes.length) {
+                                    s += sqrt(
+                                        (tappedPoints.last - tappedPoints.first)
+                                            .distanceSquared);
+                                  }
                                   totalUserDistance = s;
-                                }                                
+                                }
                               });
                             },
                             child: CustomPaint(
@@ -295,7 +303,7 @@ class _MyHomePageState extends State<MyHomePage>
                   padding: const EdgeInsets.all(5.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [                      
+                    children: [
                       Text(totalUserDistance.toStringAsFixed(3),
                           style: const TextStyle(
                               fontSize: 20, fontWeight: FontWeight.bold))
@@ -357,6 +365,7 @@ class MyPainter extends CustomPainter {
     for (int i = 1; i < _nodes.length; i++) {
       p.lineTo(_nodes[i].dx, _nodes[i].dy);
     }
+    p.lineTo(_nodes.first.dx, _nodes.first.dy);
     return p;
   }
 
@@ -395,6 +404,9 @@ class UserPainter extends CustomPainter {
         for (int i = 0; i < _tappedPoints.length - 1; i++) {
           canvas.drawLine(_tappedPoints[i], _tappedPoints[i + 1], edgesPaint);
         }
+      }
+      if (_tappedPoints.length == _nodes.length) {
+        canvas.drawLine(_tappedPoints.last, _tappedPoints.first, edgesPaint);
       }
       /*Path path = getPath();
       PathMetrics pathMetrics = path.computeMetrics();
