@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:take_same_path/GeneticAlgorithm.dart';
 import 'dart:math';
 import 'BranchAndBound.dart';
 
@@ -33,6 +34,8 @@ class MainApp extends StatelessWidget {
   }
 }
 
+List<String> methods = <String>['Branch and bound', 'Genetic Algorithm'];
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -60,6 +63,7 @@ class _MyHomePageState extends State<MyHomePage>
   bool isComplete = false;
   Offset tappedPoint = Offset.infinite;
   List<Offset> tappedPoints = [];
+  String dropdownValue = methods.first;
 
   @override
   void initState() {
@@ -140,12 +144,28 @@ class _MyHomePageState extends State<MyHomePage>
     return nodes;
   }
 
+  ga(int populationSize, int numIterations) {
+    var bestSolution = <int>[];
+    List<List<double>> input = [];
+    for (int i = 0; i < _nodes.length; i++) {
+      input.add([_nodes[i].dx, _nodes[i].dy]);
+    }
+    var algorithm = GeneticAlgorithm(input, populationSize, numIterations);
+    bestSolution = algorithm.run();
+
+    var nodes = <Offset>[];
+    for (int i = 0; i < _nodes.length; i++) {
+      nodes.add(_nodes[bestSolution[i]]);
+    }
+    return nodes;
+  }
+
   @override
   Widget build(BuildContext context) {
     screenWidth = MediaQuery.of(context).size.width.toInt();
     screenHeight = MediaQuery.of(context).size.height.toInt();
     canvasHeight = screenHeight ~/ 3;
-    canvasWidth = screenWidth * 9 ~/ 10;
+    canvasWidth = screenWidth * 9 ~/ 10;    
     return Scaffold(
         appBar: AppBar(title: const Text("Take Same Path")),
         body: LayoutBuilder(
@@ -155,7 +175,7 @@ class _MyHomePageState extends State<MyHomePage>
               Padding(
                   padding: const EdgeInsets.all(5.0),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       /*Expanded(
                         flex: 1,
@@ -193,12 +213,6 @@ class _MyHomePageState extends State<MyHomePage>
                       Expanded(
                         flex: 2,
                         child: ElevatedButton(
-                            onPressed: () {}, child: const Text("Step")),
-                      ),
-                      const Spacer(flex: 1),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton(
                             onPressed: () {
                               setState(() {
                                 totalDistance = 0;
@@ -206,7 +220,6 @@ class _MyHomePageState extends State<MyHomePage>
                                 numNodes = 5;
                                 _nodes = generateNodes(
                                     numNodes, canvasWidth, canvasHeight);
-                                print("Generated nodes: $_nodes");
                                 tappedPoints = [_nodes.first];
                                 totalUserDistance = 0;
                                 calculateDistance(_nodes);
@@ -218,20 +231,58 @@ class _MyHomePageState extends State<MyHomePage>
                       ),
                       const Spacer(flex: 1),
                       Expanded(
-                        flex: 2,
-                        child: ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                List<Offset> nodes = branchBound();
-                                _nodes = nodes;
-                                calculateDistance(_nodes);
+                          flex: 3,
+                          child: DropdownButton<String>(
+                              isExpanded: true,
+                              value: dropdownValue,
+                              elevation: 16,
+                              style: const TextStyle(color: Colors.deepPurple),
+                              underline: Container(
+                                height: 2,
+                                color: Colors.deepPurpleAccent,
+                              ),
+                              items: methods.map<DropdownMenuItem<String>>(
+                                  (String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                              onChanged: (String? value) {
+                                setState(() {
+                                  dropdownValue = value!;
+                                  List<Offset> nodes = [];
+                                  if (dropdownValue == methods[0]){
+                                    nodes = branchBound();
+                                  }
+                                  if (dropdownValue == methods[1]){
+                                    nodes = ga(10, 100);
+                                  }                                  
+                                  print("Solving using $dropdownValue");                                                             
+                                  _nodes = nodes;
+                                  calculateDistance(_nodes);
+                                  tappedPoints = [_nodes.first];
+                                  animationController.reset();
+                                  animationController.forward();
+                                });
+                              }))
 
-                                animationController.reset();
-                                animationController.forward();
-                              });
-                            },
-                            child: const Text("Solve")),
-                      )
+                      // Expanded(
+                      //   flex: 2,
+                      //   child: ElevatedButton(
+                      //       onPressed: () {
+                      //         setState(() {
+                      //           // List<Offset> nodes = branchBound();
+                      //           List<Offset> nodes = ga();
+                      //           _nodes = nodes;
+                      //           calculateDistance(_nodes);
+                      //           tappedPoints = [_nodes.first];
+                      //           animationController.reset();
+                      //           animationController.forward();
+                      //         });
+                      //       },
+                      //       child: const Text("Solve")),
+                      // )
                     ],
                   )),
               AnimatedBuilder(
