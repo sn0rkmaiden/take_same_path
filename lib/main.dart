@@ -398,6 +398,7 @@ class MyPainter extends CustomPainter {
   ui.Image? image;
   var _nodes = <Offset>[];
   final double _progress;  
+  double angle = 0;
 
   MyPainter(nodes, this._progress, [this.image]) {
     _nodes = nodes;
@@ -424,27 +425,17 @@ class MyPainter extends CustomPainter {
       Path extracted =
           pathMetric.extractPath(0.0, pathMetric.length * _progress);
 
-      canvas.drawPath(extracted, edgesPaint);
-
-      double prevAngle = -1;
+      canvas.drawPath(extracted, edgesPaint);      
       
-      if (image != null) {
+      if (image != null) {        
         double cx = pos!.position.dx;
         double cy = pos.position.dy;
         Offset location =
             Offset(cx - image!.width / 2, cy - image!.height / 2);
-        canvas.save();
-        if (prevAngle == -1){
-          prevAngle = pos.angle;
-        }
-        else{
-          prevAngle += pos.angle;
-        }
-        double angle = pos.angle;        
-        // print("Angle before: ${angle * 180 / pi}");
-        rotateImage(canvas: canvas, cx: cx, cy: cy, angle: prevAngle);                
+        canvas.save();                
+        rotateImage(canvas: canvas, cx: cx, cy: cy, angle: pi / 2 - pos.angle);                      
         canvas.drawImage(image!, location, edgesPaint);        
-        canvas.restore();
+        canvas.restore();        
       }
 
       canvas.drawPoints(
