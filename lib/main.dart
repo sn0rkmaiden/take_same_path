@@ -1,6 +1,8 @@
-import 'dart:ui';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:take_same_path/GeneticAlgorithm.dart';
 import 'dart:math';
 import 'BranchAndBound.dart';
@@ -13,7 +15,7 @@ extension Swappable on List {
   }
 }
 
-void main() {
+void main() async{
   runApp(const MainApp());
 }
 
@@ -64,6 +66,7 @@ class _MyHomePageState extends State<MyHomePage>
   Offset tappedPoint = Offset.infinite;
   List<Offset> tappedPoints = [];
   String dropdownValue = methods.first;
+  late Future<ui.Image> _imageFuture;
 
   @override
   void initState() {
@@ -85,12 +88,24 @@ class _MyHomePageState extends State<MyHomePage>
           _progress = animation.value;
         });
       });
+
+    _imageFuture = _loadImage("assets/images/car.png");    
   }
 
   @override
   void dispose() {
     controller.dispose();
     super.dispose();
+  }
+
+  Future<ui.Image> _loadImage(String imagePath) async {
+    ByteData bd = await rootBundle.load(imagePath);
+    final Uint8List bytes = Uint8List.view(bd.buffer);
+    final ui.Codec codec = await ui.instantiateImageCodec(bytes,
+        targetHeight: 60, targetWidth: 60);
+    final ui.Image image = (await codec.getNextFrame()).image;
+
+    return image;
   }
 
   calculateDistance(List<Offset> nodes) {
@@ -165,7 +180,7 @@ class _MyHomePageState extends State<MyHomePage>
     screenWidth = MediaQuery.of(context).size.width.toInt();
     screenHeight = MediaQuery.of(context).size.height.toInt();
     canvasHeight = screenHeight ~/ 3;
-    canvasWidth = screenWidth * 9 ~/ 10;    
+    canvasWidth = screenWidth * 9 ~/ 10;
     return Scaffold(
         appBar: AppBar(title: const Text("Take Same Path")),
         body: LayoutBuilder(
@@ -252,13 +267,13 @@ class _MyHomePageState extends State<MyHomePage>
                                 setState(() {
                                   dropdownValue = value!;
                                   List<Offset> nodes = [];
-                                  if (dropdownValue == methods[0]){
+                                  if (dropdownValue == methods[0]) {
                                     nodes = branchBound();
                                   }
-                                  if (dropdownValue == methods[1]){
+                                  if (dropdownValue == methods[1]) {
                                     nodes = ga(10, 100);
-                                  }                                  
-                                  print("Solving using $dropdownValue");                                                             
+                                  }
+                                  print("Solving using $dropdownValue");
                                   _nodes = nodes;
                                   calculateDistance(_nodes);
                                   tappedPoints = [_nodes.first];
@@ -289,64 +304,77 @@ class _MyHomePageState extends State<MyHomePage>
                 animation: animationController,
                 builder: (BuildContext context, _) {
                   return Expanded(
-                    child: ClipRect(
-                      child: Column(
-                        children: [
-                          CustomPaint(
-                            painter: MyPainter(_nodes, _progress),
-                            size: Size(canvasWidth.toDouble(),
-                                canvasHeight.toDouble()),
-                          ),
-                          Padding(
-                              padding: const EdgeInsets.all(5.0),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
+                    child: FutureBuilder<ui.Image>(
+                        future: _imageFuture,
+                        builder: (BuildContext context,
+                            AsyncSnapshot<ui.Image> snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.done) {                            
+                            return ClipRect(
+                              child: Column(
                                 children: [
-                                  Text(totalDistance.toStringAsFixed(3),
-                                      style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold)),
-                                  Text(
-                                      "Best: ${bestDistance.toStringAsFixed(3)}",
-                                      style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold))
+                                  CustomPaint(
+                                    painter: MyPainter(_nodes, _progress, snapshot.data),
+                                    size: Size(canvasWidth.toDouble(),
+                                        canvasHeight.toDouble()),
+                                  ),
+                                  Padding(
+                                      padding: const EdgeInsets.all(5.0),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
+                                        children: [
+                                          Text(totalDistance.toStringAsFixed(3),
+                                              style: const TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold)),
+                                          Text(
+                                              "Best: ${bestDistance.toStringAsFixed(3)}",
+                                              style: const TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold))
+                                        ],
+                                      )),
+                                  GestureDetector(
+                                    onPanDown: (details) {
+                                      setState(() {
+                                        tappedPoint = details.localPosition;
+                                        if (tappedPoints.isNotEmpty &
+                                            (tappedPoints.length <
+                                                _nodes.length)) {
+                                          tappedPoints.add(tappedPoint);
+                                          double s = 0;
+                                          for (int i = 0;
+                                              i < tappedPoints.length - 1;
+                                              i++) {
+                                            s += sqrt((tappedPoints[i] -
+                                                    tappedPoints[i + 1])
+                                                .distanceSquared);
+                                          }
+                                          if (tappedPoints.length ==
+                                              _nodes.length) {
+                                            s += sqrt((tappedPoints.last -
+                                                    tappedPoints.first)
+                                                .distanceSquared);
+                                          }
+                                          totalUserDistance = s;
+                                        }
+                                      });
+                                    },
+                                    child: CustomPaint(
+                                        painter: UserPainter(
+                                            _nodes, _progress, tappedPoints),
+                                        size: Size(canvasWidth.toDouble(),
+                                            canvasHeight.toDouble())),
+                                  )
                                 ],
-                              )),
-                          GestureDetector(
-                            onPanDown: (details) {
-                              setState(() {
-                                tappedPoint = details.localPosition;
-                                if (tappedPoints.isNotEmpty &
-                                    (tappedPoints.length < _nodes.length)) {
-                                  tappedPoints.add(tappedPoint);
-                                  double s = 0;
-                                  for (int i = 0;
-                                      i < tappedPoints.length - 1;
-                                      i++) {
-                                    s += sqrt(
-                                        (tappedPoints[i] - tappedPoints[i + 1])
-                                            .distanceSquared);
-                                  }
-                                  if (tappedPoints.length == _nodes.length) {
-                                    s += sqrt(
-                                        (tappedPoints.last - tappedPoints.first)
-                                            .distanceSquared);
-                                  }
-                                  totalUserDistance = s;
-                                }
-                              });
-                            },
-                            child: CustomPaint(
-                                painter: UserPainter(
-                                    _nodes, _progress, tappedPoints),
-                                size: Size(canvasWidth.toDouble(),
-                                    canvasHeight.toDouble())),
-                          )
-                        ],
-                      ),
-                    ),
+                              ),
+                            );
+                          }
+                          else{
+                            return const Scaffold();
+                          }
+                        }),
                   );
                 },
               ),
@@ -367,10 +395,11 @@ class _MyHomePageState extends State<MyHomePage>
 }
 
 class MyPainter extends CustomPainter {
+  ui.Image? image;
   var _nodes = <Offset>[];
-  final double _progress;
+  final double _progress;  
 
-  MyPainter(nodes, this._progress) {
+  MyPainter(nodes, this._progress, [this.image]) {
     _nodes = nodes;
   }
 
@@ -389,21 +418,43 @@ class MyPainter extends CustomPainter {
 
     if (_nodes.isNotEmpty) {
       Path path = getPath();
-      PathMetrics pathMetrics = path.computeMetrics();
-      PathMetric pathMetric = pathMetrics.elementAt(0);
+      ui.PathMetrics pathMetrics = path.computeMetrics();
+      ui.PathMetric pathMetric = pathMetrics.elementAt(0);
       final pos = pathMetric.getTangentForOffset(pathMetric.length * _progress);
       Path extracted =
           pathMetric.extractPath(0.0, pathMetric.length * _progress);
+
       canvas.drawPath(extracted, edgesPaint);
 
+      double prevAngle = -1;
+      
+      if (image != null) {
+        double cx = pos!.position.dx;
+        double cy = pos.position.dy;
+        Offset location =
+            Offset(cx - image!.width / 2, cy - image!.height / 2);
+        canvas.save();
+        if (prevAngle == -1){
+          prevAngle = pos.angle;
+        }
+        else{
+          prevAngle += pos.angle;
+        }
+        double angle = pos.angle;        
+        // print("Angle before: ${angle * 180 / pi}");
+        rotateImage(canvas: canvas, cx: cx, cy: cy, angle: prevAngle);                
+        canvas.drawImage(image!, location, edgesPaint);        
+        canvas.restore();
+      }
+
       canvas.drawPoints(
-          PointMode.points,
+          ui.PointMode.points,
           [_nodes[0]],
           nodesPaint
             ..strokeWidth = 30
             ..color = Colors.deepPurple);
       canvas.drawPoints(
-          PointMode.points,
+          ui.PointMode.points,
           _nodes.sublist(1),
           nodesPaint
             ..strokeWidth = 20
@@ -418,6 +469,16 @@ class MyPainter extends CustomPainter {
     }
     p.lineTo(_nodes.first.dx, _nodes.first.dy);
     return p;
+  }
+
+  void rotateImage(
+      {required Canvas canvas,
+      required double cx,
+      required double cy,
+      required double angle}) {
+    canvas.translate(cx, cy);
+    canvas.rotate(angle);
+    canvas.translate(-cx, -cy);
   }
 
   @override
@@ -468,13 +529,13 @@ class UserPainter extends CustomPainter {
       canvas.drawPath(extracted, edgesPaint);*/
 
       canvas.drawPoints(
-          PointMode.points,
+          ui.PointMode.points,
           [_nodes[0]],
           nodesPaint
             ..strokeWidth = 30
             ..color = Colors.deepPurple);
       canvas.drawPoints(
-          PointMode.points,
+          ui.PointMode.points,
           _nodes.sublist(1),
           nodesPaint
             ..strokeWidth = 20

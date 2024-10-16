@@ -175,8 +175,8 @@ List<int> shuffle(List<int> order, int num) {
   }
 
   for (int i = 0; i < num; i++) {    
-    int indexA = random.nextInt(order.length);
-    int indexB = random.nextInt(order.length);
+    int indexA = random.nextInt(order.length - 1) + 1;
+    int indexB = random.nextInt(order.length - 1) + 1;
     swap(order2, indexA, indexB);
   }
   return order2;

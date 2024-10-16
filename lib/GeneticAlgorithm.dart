@@ -55,7 +55,7 @@ class GeneticAlgorithm {
   void mutate(List<int> order, double mutationRate) {
     for (int i = 0; i < n; i++) {
       if (random.nextDouble() < mutationRate) {
-        int indexA = random.nextInt(order.length).floor();
+        int indexA = random.nextInt(order.length - 1) + 1;
         int indexB = (indexA + 1) % n;
         swap(order, indexA, indexB);
       }
@@ -63,7 +63,7 @@ class GeneticAlgorithm {
   }
 
   List<int> crossOver(List<int> orderA, List<int> orderB) {
-    int start = random.nextInt(order.length);
+    int start = random.nextInt(order.length - 1) + 1;
     int end = random.nextInt(order.length - (start)) + (start + 1);
     List<int> newOrder = orderA.sublist(start, end);
     for (int i = 0; i < orderB.length; i++) {
@@ -156,8 +156,8 @@ class GeneticAlgorithm {
     }
 
     for (int i = 0; i < num; i++) {
-      int indexA = random.nextInt(order.length);
-      int indexB = random.nextInt(order.length);
+      int indexA = random.nextInt(order.length - 1) + 1;
+      int indexB = random.nextInt(order.length - 1) + 1;
       swap(order2, indexA, indexB);
     }
     return order2;
