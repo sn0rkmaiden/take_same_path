@@ -15,7 +15,7 @@ extension Swappable on List {
   }
 }
 
-void main() async{
+void main() {
   runApp(const MainApp());
 }
 
@@ -47,8 +47,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin {
-  var _nodes = <Offset>[];
-  var _edges = <Offset>[];
+  var _nodes = <Offset>[];  
   int canvasWidth = 0;
   int canvasHeight = 0;
   int screenWidth = 0;
@@ -66,7 +65,8 @@ class _MyHomePageState extends State<MyHomePage>
   Offset tappedPoint = Offset.infinite;
   List<Offset> tappedPoints = [];
   String dropdownValue = methods.first;
-  late Future<ui.Image> _imageFuture;
+  late List<ui.Image> _backgroundImages;
+  late Future<ui.Image> _imageFuture;  
 
   @override
   void initState() {
@@ -87,9 +87,18 @@ class _MyHomePageState extends State<MyHomePage>
         setState(() {
           _progress = animation.value;
         });
-      });
+      });   
+    _imageFuture = _loadImage("assets/images/turtle.png");
+    _asyncInit();
+  }
 
-    _imageFuture = _loadImage("assets/images/car.png");    
+  Future<void> _asyncInit() async {
+    final imageNames = ["assets/images/car.png", "assets/images/city.png", "assets/images/home.png"];
+    final futures = [for (final name in imageNames) _loadImage(name)];    
+    final images = await Future.wait(futures);
+    setState(() {
+      _backgroundImages = images;
+    });
   }
 
   @override
@@ -272,8 +281,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   }
                                   if (dropdownValue == methods[1]) {
                                     nodes = ga(10, 100);
-                                  }
-                                  print("Solving using $dropdownValue");
+                                  }                                  
                                   _nodes = nodes;
                                   calculateDistance(_nodes);
                                   tappedPoints = [_nodes.first];
@@ -314,7 +322,7 @@ class _MyHomePageState extends State<MyHomePage>
                               child: Column(
                                 children: [
                                   CustomPaint(
-                                    painter: MyPainter(_nodes, _progress, snapshot.data),
+                                    painter: MyPainter(_nodes, _progress, _backgroundImages[0], _backgroundImages[1], _backgroundImages[2]),
                                     size: Size(canvasWidth.toDouble(),
                                         canvasHeight.toDouble()),
                                   ),
@@ -395,12 +403,14 @@ class _MyHomePageState extends State<MyHomePage>
 }
 
 class MyPainter extends CustomPainter {
-  ui.Image? image;
+  ui.Image? imageCar;
+  ui.Image? imageCity;
+  ui.Image? imageHome;
   var _nodes = <Offset>[];
   final double _progress;  
   double angle = 0;
 
-  MyPainter(nodes, this._progress, [this.image]) {
+  MyPainter(nodes, this._progress, this.imageCar, this.imageCity, this.imageHome) {
     _nodes = nodes;
   }
 
@@ -423,33 +433,54 @@ class MyPainter extends CustomPainter {
       ui.PathMetric pathMetric = pathMetrics.elementAt(0);
       final pos = pathMetric.getTangentForOffset(pathMetric.length * _progress);
       Path extracted =
-          pathMetric.extractPath(0.0, pathMetric.length * _progress);
+          pathMetric.extractPath(0.0, pathMetric.length * _progress);          
 
-      canvas.drawPath(extracted, edgesPaint);      
-      
-      if (image != null) {        
-        double cx = pos!.position.dx;
-        double cy = pos.position.dy;
-        Offset location =
-            Offset(cx - image!.width / 2, cy - image!.height / 2);
-        canvas.save();                
-        rotateImage(canvas: canvas, cx: cx, cy: cy, angle: pi / 2 - pos.angle);                      
-        canvas.drawImage(image!, location, edgesPaint);        
-        canvas.restore();        
-      }
-
+      if (imageCity != null){
+        canvas.save();
+        for (int i = 0; i < _nodes.sublist(1).length; i++){
+          canvas.drawImage(imageCity!, Offset(_nodes.sublist(1)[i].dx - imageCity!.width / 2, _nodes.sublist(1)[i].dy - imageCity!.height / 2), nodesPaint);        
+        }
+        canvas.restore();
+      }      
+      else{
       canvas.drawPoints(
+        ui.PointMode.points,
+        _nodes.sublist(1),
+        nodesPaint
+          ..strokeWidth = 20
+          ..color = Colors.lightBlue);
+      }   
+
+      /*canvas.drawPoints(
           ui.PointMode.points,
           [_nodes[0]],
           nodesPaint
             ..strokeWidth = 30
-            ..color = Colors.deepPurple);
-      canvas.drawPoints(
-          ui.PointMode.points,
-          _nodes.sublist(1),
-          nodesPaint
-            ..strokeWidth = 20
-            ..color = Colors.lightBlue);
+            ..color = Colors.deepPurple);*/
+      
+      // canvas.drawImage(imageHome!, Offset(_nodes[0].dx - imageHome!.width / 2, _nodes[0].dy - imageHome!.height / 2), nodesPaint);
+      
+      final Size targetSize = new Size(100.0, 100.0);
+      final ui.Rect rect = Offset(_nodes[0].dx - imageHome!.width / 4, _nodes[0].dy - imageHome!.height / 4) & new Size(100.0, 100.0);
+      final Size imageSize = new Size(200.0, 200.0);         
+      FittedSizes sizes = applyBoxFit(BoxFit.fill, imageSize, targetSize);           
+      final Rect inputSubrect = Alignment.center.inscribe(sizes.source, Offset.zero & imageSize);           
+      final Rect outputSubrect = Alignment.center.inscribe(sizes.destination, rect);                  
+
+      canvas.drawImageRect(imageHome!, inputSubrect, outputSubrect, nodesPaint);
+
+      canvas.drawPath(extracted, edgesPaint);      
+      
+      if (imageCar != null) {        
+        double cx = pos!.position.dx;
+        double cy = pos.position.dy;
+        Offset location =
+            Offset(cx - imageCar!.width / 2, cy - imageCar!.height / 2);
+        canvas.save();                
+        rotateImage(canvas: canvas, cx: cx, cy: cy, angle: pi / 2 - pos.angle);                      
+        canvas.drawImage(imageCar!, location, edgesPaint);        
+        canvas.restore();        
+      }     
     }
   }
 
