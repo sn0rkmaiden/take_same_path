@@ -65,7 +65,7 @@ class _MyHomePageState extends State<MyHomePage>
   Offset tappedPoint = Offset.infinite;
   List<Offset> tappedPoints = [];
   String dropdownValue = methods.first;
-  late List<ui.Image> _backgroundImages;
+  late List<ui.Image> _backgroundImages = [];
   late Future<ui.Image> _imageFuture;  
 
   @override
