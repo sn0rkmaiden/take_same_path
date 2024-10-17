@@ -7,6 +7,7 @@ environment:
   sdk: ^3.5.3
 
 dependencies:
+  flutter_launcher_icons: ^0.14.1
   matrices: ^1.2.7
   flutter:
     sdk: flutter
@@ -16,7 +17,16 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
 
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icons/airplane.jpg"
+  min_sdk_android: 21
+
 flutter:
+  generate: true
   assets: 
         - assets/images/         
+        - assets/icons/
   uses-material-design: true

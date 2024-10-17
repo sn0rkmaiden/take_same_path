@@ -460,14 +460,14 @@ class MyPainter extends CustomPainter {
       
       // canvas.drawImage(imageHome!, Offset(_nodes[0].dx - imageHome!.width / 2, _nodes[0].dy - imageHome!.height / 2), nodesPaint);
       
-      final Size targetSize = new Size(100.0, 100.0);
+      const Size targetSize = Size(100.0, 100.0);
       final ui.Rect rect = Offset(_nodes[0].dx - imageHome!.width / 4, _nodes[0].dy - imageHome!.height / 4) & new Size(100.0, 100.0);
-      final Size imageSize = new Size(200.0, 200.0);         
+      const Size imageSize = Size(200.0, 200.0);         
       FittedSizes sizes = applyBoxFit(BoxFit.fill, imageSize, targetSize);           
-      final Rect inputSubrect = Alignment.center.inscribe(sizes.source, Offset.zero & imageSize);           
-      final Rect outputSubrect = Alignment.center.inscribe(sizes.destination, rect);                  
+      final Rect inputSubRect = Alignment.center.inscribe(sizes.source, Offset.zero & imageSize);           
+      final Rect outputSubRect = Alignment.center.inscribe(sizes.destination, rect);                  
 
-      canvas.drawImageRect(imageHome!, inputSubrect, outputSubrect, nodesPaint);
+      canvas.drawImageRect(imageHome!, inputSubRect, outputSubRect, nodesPaint);
 
       canvas.drawPath(extracted, edgesPaint);      
       
