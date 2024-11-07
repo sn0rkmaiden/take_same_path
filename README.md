@@ -14,4 +14,6 @@ You can buiid the app using source code in Android Studio or Visual Studio code.
 
 ## :mag: Demo
 
+![](https://github.com/sn0rkmaiden/take_same_path/blob/main/take_same_path_demo.gif)
+
 
