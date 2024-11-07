@@ -12,7 +12,7 @@ Supported algorithms:
 
 ## :rocket: How to use?
 
-You can buiid the app using source code in Android Studio or Visual Studio code.
+You can build the app using source code in Android Studio or Visual Studio code.
 
 ## :mag: Demo
 
