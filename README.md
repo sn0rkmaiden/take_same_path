@@ -8,7 +8,7 @@ App allows user to try to quickly find optimal path and draw it on canvas manual
 
 Supported algorithms:
 1. Branch and bound
-2. Generic algorithm
+2. Genetic algorithm
 
 ## :rocket: How to use?
 
