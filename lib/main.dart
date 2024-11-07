@@ -531,16 +531,22 @@ class UserPainter extends CustomPainter {
       ..strokeCap = StrokeCap.butt
       ..style = PaintingStyle.stroke
       ..color = Colors.redAccent;
+    
+    int lastIndex = 0;
 
     if (_nodes.isNotEmpty) {
       if ((_tappedPoints.length > 1) &
           (_tappedPoints.length <= _nodes.length)) {
-        for (int i = 0; i < _tappedPoints.length - 1; i++) {
-          canvas.drawLine(_tappedPoints[i], _tappedPoints[i + 1], edgesPaint);
+        for (int i = 0; i < _tappedPoints.length - 1; i++) {    
+          var diff = [for (var j = 0; j < _nodes.length; j++) (_nodes[j] - _tappedPoints[i + 1]).distance];
+          int nextNodeIndex = diff.indexOf(diff.reduce(min));          
+          canvas.drawLine(_nodes[lastIndex], _nodes[nextNodeIndex], edgesPaint);          
+          lastIndex = nextNodeIndex;
         }
-      }
+      }      
       if (_tappedPoints.length == _nodes.length) {
-        canvas.drawLine(_tappedPoints.last, _tappedPoints.first, edgesPaint);
+        // canvas.drawLine(_tappedPoints.last, _tappedPoints.first, edgesPaint);
+        canvas.drawLine(_nodes[lastIndex], _nodes[0], edgesPaint);
       }
       /*Path path = getPath();
       PathMetrics pathMetrics = path.computeMetrics();
