@@ -4,7 +4,7 @@ This is my project for *Game Theory and Operations Research* course at universit
 
 ## :memo: About
 
-App allows user to draw the path on canvas manually at the same time as built-in algorithms wokrs (sort of like in a competition) to compare performance of different approaches.
+App allows user to draw the path on canvas manually at the same time as built-in algorithms work (sort of like in a competition) to compare performance of different approaches.
 
 Supported algorithms:
 1. Branch and bound
