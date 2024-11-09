@@ -12,6 +12,7 @@ class GeneticAlgorithm {
   List<int> currentBest = [];
   List<double> fitness = [];
   int iterations = 0;
+  int count = 0;
   Random random = Random();
 
   GeneticAlgorithm(
@@ -22,7 +23,10 @@ class GeneticAlgorithm {
     iterations = numberIterations;
   }
 
-  List<int> run() {
+  (List<int>, int) run(){
+
+    Stopwatch stopwatch = Stopwatch()..start();
+
     for (int i = 0; i < n; i++) {
       order.add(i);
     }
@@ -37,7 +41,11 @@ class GeneticAlgorithm {
       nextGeneration();
     }
 
-    return bestEver;
+    stopwatch.stop();
+    int t = stopwatch.elapsedMilliseconds;
+    print("Time genetic algorithm: $t");
+
+    return (bestEver, t);
   }
 
   void nextGeneration() {

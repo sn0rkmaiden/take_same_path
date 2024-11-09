@@ -217,8 +217,8 @@ class BranchAndBound {
       for (int i = 0; i < n; i++) {
         bestSolution[i] = solution[i];
       }
-      print("New best solution : $solution");      
-      print("New best score: $bestEval");
+      // print("New best solution : $solution");      
+      // print("New best score: $bestEval");
     }
     return;
   }
@@ -249,13 +249,20 @@ class BranchAndBound {
     return eval;
   }
 
-  List<int> run(){
+  (List<int>, int) run(){
+
+    Stopwatch stopwatch = Stopwatch()..start();    
+
     branchAndBound(dist, iteration, lowerBound);
-    print("Number of iterations : $count");
-    print("Best solution:");
-    print(bestSolution);
-    print("Best evaluation:");
-    print(bestEval);
-    return bestSolution;
+
+    stopwatch.stop();
+    int t = stopwatch.elapsedMilliseconds;
+    print("Time branch and bound: $t");
+    // print("Number of iterations : $count");
+    // print("Best solution:");
+    // print(bestSolution);
+    // print("Best evaluation:");
+    // print(bestEval);
+    return (bestSolution, t);
   }
 }

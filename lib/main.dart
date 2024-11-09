@@ -82,14 +82,23 @@ class _MyHomePageState extends State<MyHomePage>
         }
       });
 
-    animation = Tween(begin: 0.0, end: 1.0).animate(animationController)
+    // animation = Tween(begin: 0.0, end: 1.0).animate(animationController)
+    //   ..addListener(() {
+    //     setState(() {
+    //       _progress = animation.value;
+    //     });
+    //   });       
+    _imageFuture = _loadImage("assets/images/turtle.png");    
+    _asyncInit();
+  }
+
+  createAnimation(double speed){
+    animation = Tween(begin: 0.0, end: speed).animate(animationController)
       ..addListener(() {
         setState(() {
           _progress = animation.value;
         });
-      });   
-    _imageFuture = _loadImage("assets/images/turtle.png");
-    _asyncInit();
+      });  
   }
 
   Future<void> _asyncInit() async {
@@ -152,12 +161,14 @@ class _MyHomePageState extends State<MyHomePage>
 
   branchBound() {
     var bestSolution = <int>[];
+    int count = 0;
     List<List<double>> input = [];
     for (int i = 0; i < _nodes.length; i++) {
       input.add([_nodes[i].dx, _nodes[i].dy]);
     }
     var bb = BranchAndBound(input);
-    bestSolution = bb.run();
+    (bestSolution, count) = bb.run();
+    // print("BnB count: $count");
 
     // var edges = <Offset>[];
     var nodes = <Offset>[];
@@ -165,23 +176,24 @@ class _MyHomePageState extends State<MyHomePage>
     for (int i = 0; i < _nodes.length; i++) {
       nodes.add(_nodes[bestSolution[i]]);
     }
-    return nodes;
+    return (nodes, count);
   }
 
   ga(int populationSize, int numIterations) {
     var bestSolution = <int>[];
+    int count = 0;
     List<List<double>> input = [];
     for (int i = 0; i < _nodes.length; i++) {
       input.add([_nodes[i].dx, _nodes[i].dy]);
     }
     var algorithm = GeneticAlgorithm(input, populationSize, numIterations);
-    bestSolution = algorithm.run();
+    (bestSolution, count) = algorithm.run();
 
     var nodes = <Offset>[];
     for (int i = 0; i < _nodes.length; i++) {
       nodes.add(_nodes[bestSolution[i]]);
     }
-    return nodes;
+    return (nodes, count);
   }
 
   @override
@@ -226,7 +238,7 @@ class _MyHomePageState extends State<MyHomePage>
                                   int j = random.nextInt(_nodes.length - 1) + 1;
                                   _nodes.swap(i, j);
                                   calculateDistance(_nodes);
-                                  animationController.reset();
+                                  animationController.reset();                                  
                                   animationController.forward();
                                 }
                               });
@@ -248,6 +260,7 @@ class _MyHomePageState extends State<MyHomePage>
                                 totalUserDistance = 0;
                                 calculateDistance(_nodes);
                               });
+                              createAnimation(1);
                               animationController.reset();
                               animationController.forward();
                             },
@@ -277,10 +290,15 @@ class _MyHomePageState extends State<MyHomePage>
                                   dropdownValue = value!;
                                   List<Offset> nodes = [];
                                   if (dropdownValue == methods[0]) {
-                                    nodes = branchBound();
+                                    var count = 0;
+                                    (nodes, count) = branchBound();
+                                    // adjusting speed based on how many iterations it took for an algorithm to find optimal path
+                                    createAnimation(1 + 10 / count);
                                   }
                                   if (dropdownValue == methods[1]) {
-                                    nodes = ga(10, 100);
+                                    var count = 0;
+                                    (nodes, count) = ga(10, 100);
+                                    createAnimation(1 + 10 / count);
                                   }                                  
                                   _nodes = nodes;
                                   calculateDistance(_nodes);
